@@ -1,0 +1,10 @@
+# Campus Reachability & Emergency Route Audit
+# Sample Case 1: Standard Connected Campus Grid
+Gate Admin
+Gate Cafeteria
+Admin Library
+Admin Academic_Block
+Cafeteria Health_Center
+Library Academic_Block
+Academic_Block Health_Center
+

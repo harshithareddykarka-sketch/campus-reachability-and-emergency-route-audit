@@ -1,0 +1,3 @@
+# Requirements for Campus Reachability and Emergency Route Audit
+Flask>=3.0.0
+

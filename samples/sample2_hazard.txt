@@ -1,0 +1,8 @@
+# Campus Reachability & Emergency Route Audit
+# Sample Case 2: Disconnected Campus with Hazardous Isolated Zone
+Main_Station Hostel_A
+Main_Station Hostel_B
+Hostel_A Dining_Hall
+Hostel_B Dining_Hall
+Research_Annex Power_Substation
+

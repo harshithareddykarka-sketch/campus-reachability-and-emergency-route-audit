@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Reachability & Emergency Route Audit</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand-group">
+                <div class="eoc-badge">
+                    <span class="pulse-dot"></span>
+                    CAMPUS EMERGENCY OPERATIONS
+                </div>
+                <h1>Campus Reachability & Emergency Route Audit</h1>
+                <p class="tagline">Graph Reachability, Recursive DFS Components, BFS Discovery & Shortest Evacuation Routes</p>
+            </div>
+            <div class="header-controls">
+                <button type="button" class="btn btn-secondary" id="btnSample1" title="Load Problem 02 Sample Case 1">
+                    Sample Case 1
+                </button>
+                <button type="button" class="btn btn-secondary" id="btnSample2" title="Load Problem 02 Sample Case 2">
+                    Sample Case 2
+                </button>
+                <button type="button" class="btn btn-outline" id="btnReset" title="Clear all inputs">
+                    Reset
+                </button>
+                <a href="/api/download?file=solution.py" class="btn btn-primary btn-download" download="solution.py" title="Download Python 3 Solution Script">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    solution.py
+                </a>
+                <a href="/api/download?file=CODE-DOC.pdf" class="btn btn-secondary" download="CODE-DOC.pdf" title="Download Official Documentation PDF">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    CODE-DOC.pdf
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="dashboard-grid">
+        <!-- LEFT COLUMN: CONTROLS & SPECIFICATION -->
+        <aside class="dashboard-sidebar">
+            <section class="card config-card" aria-labelledby="heading-network-config">
+                <div class="card-header">
+                    <h2 id="heading-network-config">Network Specification</h2>
+                    <span class="badge badge-navy">Undirected Graph</span>
+                </div>
+                <div class="card-body">
+                    <!-- Validation error alert box -->
+                    <div id="validationAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="numVertices">Total Vertices (n):</label>
+                            <input type="number" id="numVertices" min="1" max="200" value="6" required>
+                            <span class="field-help">Numbered 0 to n-1</span>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="sourceVertex">Emergency Hub (s):</label>
+                            <input type="number" id="sourceVertex" min="0" max="199" value="0" required>
+                            <span class="field-help">Source vertex index</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-with-meta">
+                            <label for="edgesInput">Undirected Walkway Edges (u v):</label>
+                            <span class="char-hint" id="edgeCountHint">5 edges</span>
+                        </div>
+                        <textarea id="edgesInput" rows="7" spellcheck="false" placeholder="0 2&#10;0 1&#10;1 3&#10;2 3&#10;4 5"></textarea>
+                        <span class="field-help">One undirected edge per line: <code>u v</code></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="targetsInput">Target Query Vertices (one per line):</label>
+                        <textarea id="targetsInput" rows="3" spellcheck="false" placeholder="3&#10;5&#10;0"></textarea>
+                        <span class="field-help">Target vertices for shortest route queries</span>
+                    </div>
+
+                    <div class="button-row">
+                        <button type="button" class="btn btn-run" id="btnRunAudit">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Run Emergency Audit
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STATUS & METRICS -->
+            <section class="card status-card" aria-labelledby="heading-status">
+                <div class="card-header">
+                    <h2 id="heading-status">Audit Status & Connectivity</h2>
+                    <span id="connectivityBadge" class="status-pill status-ready">Awaiting Run</span>
+                </div>
+                <div class="card-body">
+                    <div class="stat-tiles">
+                        <div class="stat-tile">
+                            <span class="stat-label">Vertices (|V|)</span>
+                            <span class="stat-value" id="statV">6</span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-label">Edges (|E|)</span>
+                            <span class="stat-value" id="statE">5</span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-label">Components</span>
+                            <span class="stat-value" id="statC">-</span>
+                        </div>
+                        <div class="stat-tile">
+                            <span class="stat-label">Source Hub</span>
+                            <span class="stat-value text-hub" id="statS">0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </aside>
+
+        <!-- RIGHT COLUMN: SVG VISUALIZATION & AUDIT PANELS -->
+        <div class="dashboard-content">
+            <!-- SVG GRAPH VISUALIZATION PANEL -->
+            <section class="card visualizer-card" aria-labelledby="heading-visualizer">
+                <div class="visualizer-header">
+                    <div class="visualizer-title-group">
+                        <h2 id="heading-visualizer">Campus Reachability SVG Map</h2>
+                        <span class="visualizer-subtitle">Interactive Vector Graph • Drag nodes to reposition • Click to inspect route</span>
+                    </div>
+                    <div class="visualizer-toolbar">
+                        <div class="route-select-wrapper">
+                            <label for="routeHighlightSelect" class="sr-only">Highlight Evacuation Route</label>
+                            <select id="routeHighlightSelect" class="route-select" aria-label="Select target route to highlight">
+                                <option value="">-- Select Target Route --</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline" id="btnCenterSvg" title="Reset layout">
+                            Center Map
+                        </button>
+                    </div>
+                </div>
+
+                <div class="svg-container-wrapper" id="svgContainerWrapper">
+                    <svg id="campusSvg" viewBox="0 0 800 440" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Campus Graph SVG Map">
+                        <defs>
+                            <!-- Glow filter for emergency evacuation routes -->
+                            <filter id="routeGlow" x="-30%" y="-30%" width="160%" height="160%">
+                                <feGaussianBlur stdDeviation="4" result="blur"></feGaussianBlur>
+                                <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                            </filter>
+                            <!-- Arrow marker for directed route navigation if needed -->
+                            <marker id="arrowHead" viewBox="0 0 10 10" refX="22" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"></path>
+                            </marker>
+                        </defs>
+                        <!-- Group for edges -->
+                        <g id="svgEdgesLayer"></g>
+                        <!-- Group for highlighted route path -->
+                        <g id="svgRouteLayer"></g>
+                        <!-- Group for nodes -->
+                        <g id="svgNodesLayer"></g>
+                    </svg>
+
+                    <!-- SVG Overlay Legend -->
+                    <div class="svg-legend">
+                        <div class="legend-chip"><span class="legend-indicator indicator-hub"></span> Source Hub (s)</div>
+                        <div class="legend-chip"><span class="legend-indicator indicator-route"></span> Active Route</div>
+                        <div class="legend-chip" id="componentLegendList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RESULTS TABS & DETAILED PANELS -->
+            <section class="card results-card" aria-label="Audit Output and Analysis">
+                <div class="tab-bar" role="tablist">
+                    <button type="button" class="tab-button active" role="tab" aria-selected="true" aria-controls="panel-console" id="tab-console">
+                        Exact Assignment Output
+                    </button>
+                    <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="panel-components" id="tab-components">
+                        Components & Labels
+                    </button>
+                    <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="panel-traversals" id="tab-traversals">
+                        DFS vs BFS Traversals
+                    </button>
+                    <button type="button" class="tab-button" role="tab" aria-selected="false" aria-controls="panel-routes" id="tab-routes">
+                        Emergency Routes Table
+                    </button>
+                </div>
+
+                <!-- TAB 1: EXACT ASSIGNMENT OUTPUT CONSOLE -->
+                <div class="tab-panel active" id="panel-console" role="tabpanel" aria-labelledby="tab-console">
+                    <div class="console-wrapper">
+                        <div class="console-header">
+                            <span class="console-title">Standard Output (sys.stdout from solution.py)</span>
+                            <button type="button" class="btn btn-copy" id="btnCopyConsole" title="Copy exact output to clipboard">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy Text
+                            </button>
+                        </div>
+                        <pre class="console-output" id="exactOutputPre">Awaiting audit run...</pre>
+                    </div>
+                </div>
+
+                <!-- TAB 2: COMPONENTS & LABELS -->
+                <div class="tab-panel" id="panel-components" role="tabpanel" aria-labelledby="tab-components">
+                    <div class="components-breakdown">
+                        <div class="panel-section-header">
+                            <h3>Connected Components (Recursive DFS)</h3>
+                            <p>Components are discovered by starting at the smallest unvisited vertex and stamping each vertex with that component root.</p>
+                        </div>
+                        <div class="components-grid" id="componentsCardsGrid">
+                            <!-- Filled dynamically -->
+                        </div>
+
+                        <div class="panel-section-header" style="margin-top: 24px;">
+                            <h3>LABELS Array (Vertex Order 0 to n-1)</h3>
+                        </div>
+                        <div class="labels-strip" id="labelsStrip">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: DFS VS BFS TRAVERSALS -->
+                <div class="tab-panel" id="panel-traversals" role="tabpanel" aria-labelledby="tab-traversals">
+                    <div class="traversals-comparison">
+                        <div class="traversal-card">
+                            <div class="traversal-header">
+                                <div class="traversal-badge">DFS</div>
+                                <h3>Recursive Source DFS</h3>
+                            </div>
+                            <p class="traversal-info">Visits neighbors in increasing numerical order. Records vertex order upon first entry.</p>
+                            <div class="traversal-chain" id="dfsChain">Awaiting audit...</div>
+                        </div>
+
+                        <div class="traversal-card">
+                            <div class="traversal-header">
+                                <div class="traversal-badge badge-bfs">BFS</div>
+                                <h3>Queue-Based Source BFS</h3>
+                            </div>
+                            <p class="traversal-info">Processes neighbors in increasing order. Marks on enqueue, records on dequeue, and saves first-discovery parents.</p>
+                            <div class="traversal-chain" id="bfsChain">Awaiting audit...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: ROUTES TABLE -->
+                <div class="tab-panel" id="panel-routes" role="tabpanel" aria-labelledby="tab-routes">
+                    <div class="table-wrapper" tabindex="0" role="region" aria-labelledby="routes-table-caption">
+                        <table class="data-table">
+                            <caption id="routes-table-caption" class="sr-only">Emergency Shortest Walkway Routes by BFS First Discovery</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Target (t)</th>
+                                    <th scope="col">Distance (d)</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Shortest Route Path</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="routesTableBody">
+                                <tr>
+                                    <td colspan="5" class="table-empty">No route queries run yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+        <div class="footer-inner">
+            <span class="footer-brand">Campus Reachability & Emergency Route Audit — Problem 02</span>
+            <span class="footer-meta">Python 3 Core Engine • Undirected Graph • Recursive DFS • Queue-Based BFS • BFS Parents</span>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
